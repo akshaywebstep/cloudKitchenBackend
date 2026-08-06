@@ -1,0 +1,865 @@
+// ===============================================
+// Prisma Schema - Production Ready (Single User + RBAC)
+// ===============================================
+
+generator client {
+  provider = "prisma-client"
+  output   = "generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// ===============================================
+// ENUMS
+// ===============================================
+
+enum Status {
+  PENDING
+  ACTIVE
+  INACTIVE
+  DISCONTINUED
+}
+
+enum UserType {
+  ADMIN
+  ADMIN_STAFF
+  KITCHEN
+  KITCHEN_STAFF
+}
+
+enum DocumentType {
+  FSSAI
+  GST
+}
+
+enum Panel {
+  ADMIN
+  KITCHEN
+}
+
+enum FeatureType {
+  INCLUDE
+  EXCLUDE
+}
+
+enum Action {
+  CREATE
+  VIEW
+  UPDATE
+  DELETE
+  VIEW_TRASH
+  RESTORE
+  DESTROY
+}
+
+enum BillingCycle {
+  MONTHLY
+  YEARLY
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+}
+
+enum IntegrationChannel {
+  ZOMATO
+  SWIGGY
+  MANUAL
+}
+
+enum IntegrationStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum OrderStatus {
+  PLACED
+  PREPARING
+  COMPLETED
+  CANCELLED
+}
+
+enum OrderSource {
+  ZOMATO
+  SWIGGY
+  MANUAL
+}
+
+enum Unit {
+  // Weight
+  KG
+  GM
+  MG
+
+  // Liquid
+  LITER
+  ML
+
+  // Quantity
+  ITEM
+  PIECE
+  DOZEN
+  PAIR
+  TRAY
+
+  // Packaging
+  PACKET
+  BOX
+  BOTTLE
+  CAN
+  JAR
+  POUCH
+  SACHET
+
+  // Bulk / Storage
+  BAG
+  SACK
+  CARTON
+  CONTAINER
+
+  // Kitchen usage
+  SPOON
+  TSP
+  TBSP
+  CUP
+  BOWL
+  PLATE
+  SLICE
+
+  // Length / rolls
+  ROLL
+
+  // Optional restaurant specific
+  PORTION
+  SERVING
+}
+
+model Ingredient {
+  id        BigInt   @id @default(autoincrement()) @db.BigInt
+
+  name      String   @unique
+
+  // 🔥 image for UI suggestion
+  image     String?  
+
+  // 🔥 simple category (since no heavy logic needed)
+  category  String?   // Veg, Spice, Dairy, Meat etc.
+
+  status    Status   @default(ACTIVE)
+
+  // ===============================================
+  // 🔗 RELATIONS
+  // ===============================================
+  inventories BranchIngredientInventory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@index([category])
+  @@map("ingredient")
+}
+
+model Cuisine {
+  id        BigInt   @id @default(autoincrement()) @db.BigInt
+
+  name      String   @unique   // North Indian, South Indian, Chinese
+
+  // 🔥 UI ke liye
+  image     String?            // optional (icon / banner)
+
+  status    Status   @default(ACTIVE)
+
+  cuisines BranchCuisine[] @relation("CuisineToBranches")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@map("cuisine")
+}
+
+// ===============================================
+// MENU CATEGORY
+// ===============================================
+model MenuCategory {
+  id        BigInt   @id @default(autoincrement()) @db.BigInt
+
+  // ===============================================
+  // 🔹 BASIC INFO
+  // ===============================================
+  name      String   @unique
+  image     String?
+
+  status    Status   @default(ACTIVE)
+
+  // ===============================================
+  // 🔗 SELF RELATION (SUB CATEGORY)
+  // ===============================================
+  parentId        BigInt? @db.BigInt
+
+  parent          MenuCategory?  @relation("MenuCategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+
+  subCategories   MenuCategory[] @relation("MenuCategoryHierarchy")
+
+  // ===============================================
+  // 🔗 RELATIONS
+  // ===============================================
+  menuItems        MenuItem[] @relation("CategoryMenuItems")
+  subMenuItems     MenuItem[] @relation("SubCategoryMenuItems")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@index([parentId])
+
+  // 🔥 prevent duplicate sub-category under same parent
+  @@unique([parentId, name])
+  @@map("menucategory")
+}
+
+model Country {
+  id              BigInt   @id @default(autoincrement()) @db.BigInt
+  name            String
+  iso3            String?
+  iso2            String?
+  phonecode       String?
+  currency        String?
+  currencyName    String?
+  currencySymbol  String?
+  nationality     String?
+
+  states          State[]  @relation("CountryToState")
+  cities          City[]   @relation("CountryToCity")
+
+  branches        Branch[] @relation("BranchCountry")
+
+  @@map("country")
+}
+
+model State {
+  id          BigInt   @id @default(autoincrement()) @db.BigInt
+  name        String
+  countryId   BigInt
+  iso2        String?
+  type        String?
+
+  country     Country  @relation("CountryToState", fields: [countryId], references: [id], onDelete: Cascade)
+  cities      City[]   @relation("StateToCity")
+
+  branches    Branch[] @relation("BranchState")
+
+  @@index([countryId])
+  @@map("state")
+}
+
+model City {
+  id          BigInt   @id @default(autoincrement()) @db.BigInt
+  name        String
+  stateId     BigInt
+  countryId   BigInt
+
+  state       State    @relation("StateToCity", fields: [stateId], references: [id], onDelete: Cascade)
+  country     Country  @relation("CountryToCity", fields: [countryId], references: [id], onDelete: Cascade)
+
+  branches    Branch[] @relation("BranchCity")
+
+  @@index([stateId])
+  @@index([countryId])
+  @@map("city")
+}
+
+// ===============================================
+// USER
+// ===============================================
+model User {
+  id        BigInt   @id @default(autoincrement()) @db.BigInt
+
+  // hierarchy
+  parentId  BigInt?     @db.BigInt
+  parent    User?  @relation("UserHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children  User[] @relation("UserHierarchy")
+
+  // 🔥 tenant root
+  rootId    BigInt?   @db.BigInt
+  root      User?     @relation("UserRoot", fields: [rootId], references: [id], onDelete: SetNull)
+  rootChildren User[] @relation("UserRoot")
+
+  profilePicture String
+
+  // ===============================================
+  // PERSON (Admin OR Kitchen Owner)
+  // ===============================================
+  title      String?   // Mr, Ms, etc.
+  firstName  String?   // Admin name
+  lastName   String?
+
+  // ===============================================
+  // KITCHEN (Only if userType = KITCHEN)
+  // ===============================================
+  kitchenName   String?   // business name
+
+  // ===============================================
+  // AUTH (COMMON FOR ALL)
+  // ===============================================
+  email      String   @unique
+  phone      String   @unique
+  password   String
+
+  // ===============================================
+  // OPTIONAL CONTACT PERSON (Kitchen only)
+  // ===============================================
+  contactTitle      String?
+  contactFirstName  String?
+  contactLastName   String?
+  contactEmail      String?
+  contactPhone      String?
+
+  userType  UserType
+  status    Status @default(ACTIVE)
+
+  // 🔹 relation to documents
+  kitchenDocuments KitchenDocument[]     @relation("KitchenDocuments")
+
+  // custom RBAC role
+  roleId    BigInt?   @db.BigInt
+  role      Role?     @relation("UserRole", fields: [roleId], references: [id], onDelete: SetNull)
+
+  // reverse relations
+  ownedRoles Role[] @relation("RoleOwner")
+
+  // business relations
+  branches         Branch[]                          @relation("UserBranches")
+  subscriptions    KitchenSubscription[]             @relation("KitchenSubscriptions")
+  menuItems        MenuItem[]                        @relation("KitchenMenuItems")
+  inventory        BranchIngredientInventory[]       @relation("KitchenIngredientInventory")
+  orders           Order[]                           @relation("UserOrders")
+
+  branchAccess     UserBranchAccess[]    @relation("UserBranchAccess")
+
+  resetPasswordToken     String?
+  resetPasswordExpiresAt DateTime?
+
+  isOnboardingCompleted Boolean   @default(false)
+  onboardingCompletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([rootId])
+  @@map("user")
+}
+
+// ===============================================
+// KITCHEN DOCUMENTS
+// ===============================================
+model KitchenDocument {
+  id        BigInt   @id @default(autoincrement()) @db.BigInt
+
+  kitchenId BigInt   @db.BigInt
+  kitchen   User     @relation("KitchenDocuments", fields: [kitchenId], references: [id], onDelete: Cascade)
+
+  // document type
+  type      DocumentType
+
+  // file or number
+  documentNumber String?   // GST / FSSAI number
+  documentFile   String?   // uploaded file path
+
+  status    Status @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([kitchenId])
+  @@map("kitchendocument")
+}
+
+// ===============================================
+// EMAIL CONFIG
+// ===============================================
+model emailConfig {
+  id             BigInt   @id @default(autoincrement())
+
+  // context
+  panel          String   // admin, kitchen, supplier
+  module         String   // auth, order, subscription
+  action         String   // FORGOT_PASSWORD, ORDER_CREATED, etc.
+
+  // email content
+  subject        String   // email subject
+  htmlTemplate   String?  @db.LongText // HTML template with variables
+
+  // SMTP configuration
+  smtpHost       String   // SMTP host
+  smtpSecure     Boolean  // true = SSL, false = TLS
+  smtpPort       Int      // port (465 / 587)
+  smtpUsername   String   // SMTP username
+  smtpPassword   String   // SMTP password
+
+  // sender details
+  fromEmail      String   // sender email
+  fromName       String   // sender name
+
+  // recipients
+  to             Json?    // TO emails
+  cc             Json?    // CC emails
+  bcc            Json?    // BCC emails
+
+  // dynamic data
+  variables      Json?    // template variables (name, resetLink, etc.)
+
+  // status
+  status         Status   @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("emailconfig")
+}
+
+// ===============================================
+// ROLE (Tenant Scoped)
+// ===============================================
+model Role {
+  id        BigInt   @id @default(autoincrement()) @db.BigInt
+
+  ownerId   BigInt   @db.BigInt
+  owner   User   @relation("RoleOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  name      String
+  status    Status @default(ACTIVE)
+
+  // assigned users
+  users           User[]              @relation("UserRole")
+  rolePermissions RoleHasPermission[] @relation("RolePermissions")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, name])
+  @@index([ownerId])
+  @@map("role")
+}
+
+// ===============================================
+// PERMISSION
+// ===============================================
+model Permission {
+  id      BigInt   @id @default(autoincrement()) @db.BigInt
+
+  panel   Panel
+  module  String
+  action  Action
+
+  status  Status @default(ACTIVE)
+
+  roles   RoleHasPermission[] @relation("PermissionRoles")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([panel, module, action])
+  @@map("permission")
+}
+
+// ===============================================
+// ROLE ↔ PERMISSION
+// ===============================================
+model RoleHasPermission {
+  id           BigInt   @id @default(autoincrement()) @db.BigInt
+
+  roleId       BigInt     @db.BigInt
+  permissionId BigInt     @db.BigInt
+
+  role       Role       @relation("RolePermissions", fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation("PermissionRoles", fields: [permissionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([roleId, permissionId])
+  @@map("rolehaspermission")
+}
+
+// ===============================================
+// SUBSCRIPTION
+// ===============================================
+model Subscription {
+  id            BigInt   @id @default(autoincrement()) @db.BigInt
+
+  name          String
+  title         String?   // short display title (e.g. "Starter Plan")
+
+  price         Float     // monthly price
+  annualPrice   Float?    // yearly price
+
+  discountPct   Float?    // % discount on annual (e.g. 20 for 20%)
+
+  freeTrialDays Int?      // trial period in days
+
+  maxBranches   Int
+  maxUsers      Int
+
+  userSubs KitchenSubscription[] @relation("SubscriptionKitchens")
+  features SubscriptionFeature[] @relation("SubscriptionFeatures")
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("subscription")
+}
+
+// ===============================================
+// SUBSCRIPTION FEATURES
+// ===============================================
+model SubscriptionFeature {
+  id              BigInt   @id @default(autoincrement()) @db.BigInt
+
+  subscriptionId  BigInt
+  subscription    Subscription @relation("SubscriptionFeatures", fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  type            FeatureType   // INCLUDE / EXCLUDE
+  feature         String        // e.g. "Priority Support", "Analytics Dashboard"
+
+  createdAt       DateTime @default(now())
+
+  @@map("subscriptionfeature")
+}
+
+// ===============================================
+// KITCHEN SUBSCRIPTION
+// ===============================================
+model KitchenSubscription {
+  id              BigInt   @id @default(autoincrement()) @db.BigInt
+
+  kitchenId       BigInt   @db.BigInt
+  subscriptionId  BigInt   @db.BigInt
+
+  kitchen         User         @relation("KitchenSubscriptions", fields: [kitchenId], references: [id], onDelete: Cascade)
+  subscription    Subscription @relation("SubscriptionKitchens", fields: [subscriptionId], references: [id], onDelete: Restrict)
+
+  // ========================
+  // TRIAL INFO
+  // ========================
+  trialStartDate  DateTime?
+  trialEndDate    DateTime?
+  trialDays       Int?
+
+  // ========================
+  // ACTUAL SUBSCRIPTION
+  // ========================
+  planStartDate   DateTime?
+  planEndDate     DateTime?
+
+  billingCycle    BillingCycle // MONTHLY / YEARLY
+  duration        Int          // e.g. 1, 3, 12 (months/years based on cycle)
+
+  // ========================
+  // PRICING SNAPSHOT
+  // ========================
+  pricePaid       Float        // final paid amount
+  originalPrice   Float?       // before discount
+  discountPct     Float?
+
+  // ========================
+  // LIMIT SNAPSHOT
+  // ========================
+  maxUsers        Int
+  maxBranches     Int
+
+  // ========================
+  // STATUS
+  // ========================
+  status          SubscriptionStatus
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([kitchenId])
+  @@map("kitchensubscription")
+}
+
+// ===============================================
+// BRANCH
+// ===============================================
+model Branch {
+  id      BigInt   @id @default(autoincrement()) @db.BigInt
+
+  // ===============================================
+  // 🔹 OWNER (Kitchen / User)
+  // ===============================================
+  userId  BigInt   @db.BigInt
+  user    User     @relation("UserBranches", fields: [userId], references: [id], onDelete: Cascade)
+
+  name    String
+
+  // ===============================================
+  // 📍 LOCATION (Complete Address)
+  // ===============================================
+  addressLine1   String
+  addressLine2   String?
+
+  landmark       String?     // e.g. Near Metro Station, Mall, etc.
+  area           String?     // locality / sector / colony
+
+  pincode        String?     // postal code (India: 6 digit)
+
+  // ===============================================
+  // 🌍 LOCATION RELATIONS
+  // ===============================================
+  countryId BigInt   @db.BigInt
+  stateId   BigInt   @db.BigInt
+  cityId    BigInt   @db.BigInt
+
+  country   Country  @relation("BranchCountry", fields: [countryId], references: [id])
+  state     State    @relation("BranchState", fields: [stateId], references: [id])
+  city      City     @relation("BranchCity", fields: [cityId], references: [id])
+
+  // ===============================================
+  // 📞 CONTACT PERSON (Optional)
+  // ===============================================
+  contactTitle      String
+  contactFirstName  String
+  contactLastName   String?
+  contactEmail      String
+  contactPhone      String
+
+  // ===============================================
+  // 🔄 STATUS
+  // ===============================================
+  status  Status @default(ACTIVE)
+
+  // ===============================================
+  // 🔗 RELATIONS
+  // ===============================================
+  cuisines     BranchCuisine[]                @relation("BranchToCuisines")
+  menuItems    MenuItem[]                     @relation("BranchMenuItems")
+  inventory    BranchIngredientInventory[]    @relation("BranchIngredientInventory")
+  orders       Order[]                        @relation("BranchOrders")
+  integrations Integration[]                  @relation("BranchIntegrations")
+
+  userAccess   UserBranchAccess[] @relation("BranchUserAccess")
+
+  // ===============================================
+  // ⏱️ META
+  // ===============================================
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ===============================================
+  // ⚡ INDEXES & CONSTRAINTS
+  // ===============================================
+  @@index([userId])
+  @@index([countryId])
+  @@index([stateId])
+  @@index([cityId])
+
+  // 🔥 Prevent duplicate branch names per user
+  @@unique([userId, name])
+  @@map("branch")
+}
+
+model BranchCuisine {
+  id         BigInt   @id @default(autoincrement()) @db.BigInt
+
+  branchId   BigInt   @db.BigInt
+  cuisineId  BigInt   @db.BigInt
+
+  branch     Branch   @relation("BranchToCuisines", fields: [branchId], references: [id], onDelete: Cascade)
+  cuisine    Cuisine  @relation("CuisineToBranches", fields: [cuisineId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now())
+
+  @@unique([branchId, cuisineId]) // duplicate mapping prevent
+  @@index([branchId])
+  @@index([cuisineId])
+  @@map("branchcuisine")
+}
+
+// ===============================================
+// BRANCH ACCESS
+// ===============================================
+model UserBranchAccess {
+  id        BigInt   @id @default(autoincrement()) @db.BigInt
+
+  userId    BigInt     @db.BigInt
+  branchId  BigInt     @db.BigInt
+
+  user      User       @relation("UserBranchAccess", fields: [userId], references: [id], onDelete: Cascade)
+  branch    Branch     @relation("BranchUserAccess", fields: [branchId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, branchId])
+  @@map("userbranchaccess")
+}
+
+// ===============================================
+// INTEGRATION
+// ===============================================
+model Integration {
+  id        BigInt   @id @default(autoincrement()) @db.BigInt
+
+  branchId  BigInt     @db.BigInt
+  branch    Branch     @relation("BranchIntegrations", fields: [branchId], references: [id], onDelete: Cascade)
+
+  channel   IntegrationChannel
+  credentials Json
+
+  status    IntegrationStatus
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("integration")
+}
+
+// ===============================================
+// MENU
+// ===============================================
+model MenuItem {
+  id       BigInt   @id @default(autoincrement()) @db.BigInt
+
+  kitchenId   BigInt   @db.BigInt
+  branchId    BigInt   @db.BigInt
+
+  kitchen  User     @relation("KitchenMenuItems", fields: [kitchenId], references: [id], onDelete: Cascade)
+  branch   Branch   @relation("BranchMenuItems", fields: [branchId], references: [id], onDelete: Cascade)
+
+  // ===============================================
+  // 🔹 CATEGORY
+  // ===============================================
+  categoryId     BigInt? @db.BigInt
+  subCategoryId  BigInt? @db.BigInt
+
+  category        MenuCategory? @relation("CategoryMenuItems", fields: [categoryId], references: [id])
+  subCategory     MenuCategory? @relation("SubCategoryMenuItems", fields: [subCategoryId], references: [id])
+
+  name        String
+  description String?
+  price       Float
+
+  status      Status @default(ACTIVE)
+
+  ingredients MenuItemIngredient[] @relation("MenuItemIngredients")
+  orderItems  OrderItem[]          @relation("MenuItemOrders")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([kitchenId, branchId])
+  @@index([categoryId])
+  @@index([subCategoryId])
+  @@map("menuitem")
+}
+
+// ===============================================
+// BRANCH INGREDIENT INVENTORY
+// ===============================================
+model BranchIngredientInventory {
+  id            BigInt          @id @default(autoincrement()) @db.BigInt
+
+  kitchenId     BigInt          @db.BigInt
+  branchId      BigInt          @db.BigInt
+
+  kitchen       User            @relation("KitchenIngredientInventory", fields: [kitchenId], references: [id], onDelete: Cascade)
+  branch        Branch          @relation("BranchIngredientInventory", fields: [branchId], references: [id], onDelete: Cascade)
+
+  ingredientId   BigInt         @db.BigInt
+  ingredient     Ingredient     @relation( fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  unit        Unit
+
+  stocks      InventoryStock[]     @relation("BranchIngredientInventoryItemToStock")
+
+  ingredients MenuItemIngredient[] @relation("BranchIngredientInventoryIngredients")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([kitchenId, branchId])
+  @@map("branchingredientinventory")
+}
+
+model InventoryStock {
+  id              BigInt   @id @default(autoincrement()) @db.BigInt
+
+  inventoryItemId BigInt
+  inventoryItem   BranchIngredientInventory @relation("BranchIngredientInventoryItemToStock", fields: [inventoryItemId], references: [id], onDelete: Cascade)
+
+  quantity        Float
+
+  expiryDate      DateTime?
+  batchNumber     String?
+
+  createdAt       DateTime @default(now())
+
+  @@index([inventoryItemId])
+  @@map("inventorystock")
+}
+
+// ===============================================
+// INGREDIENT MAPPING
+// ===============================================
+model MenuItemIngredient {
+  id                BigInt        @id @default(autoincrement()) @db.BigInt
+
+  menuItemId        BigInt        @db.BigInt
+  inventoryItemId   BigInt        @db.BigInt
+
+  menuItem          MenuItem      @relation("MenuItemIngredients", fields: [menuItemId], references: [id], onDelete: Cascade)
+  inventoryItem     BranchIngredientInventory @relation("BranchIngredientInventoryIngredients", fields: [inventoryItemId], references: [id], onDelete: Restrict)
+
+  quantityRequired  Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([menuItemId, inventoryItemId])
+  @@map("menuitemingredient")
+}
+
+// ===============================================
+// ORDERS
+// ===============================================
+model Order {
+  id       BigInt   @id @default(autoincrement()) @db.BigInt
+
+  userId   BigInt     @db.BigInt
+  branchId BigInt     @db.BigInt
+
+  user     User       @relation("UserOrders", fields: [userId], references: [id], onDelete: Restrict)
+  branch   Branch     @relation("BranchOrders", fields: [branchId], references: [id], onDelete: Restrict)
+
+  source   OrderSource
+  totalAmount Float
+
+  status   OrderStatus
+
+  items    OrderItem[] @relation("OrderItems")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, branchId])
+  @@map("order")
+}
+
+model OrderItem {
+  id         BigInt   @id @default(autoincrement()) @db.BigInt
+
+  orderId    BigInt     @db.BigInt
+  menuItemId BigInt     @db.BigInt
+
+  order      Order      @relation("OrderItems", fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem   MenuItem   @relation("MenuItemOrders", fields: [menuItemId], references: [id], onDelete: Restrict)
+
+  quantity   Int
+  price      Float
+
+  @@map("orderitem")
+}

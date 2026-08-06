@@ -1,0 +1,1059 @@
+{
+  "info": {
+    "_postman_id": "15f15234-5351-4593-b5a7-c7918f9b2a98",
+    "name": "Claud Kitchen",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "37120649",
+    "_collection_link": "https://go.postman.co/collection/37120649-15f15234-5351-4593-b5a7-c7918f9b2a98?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Kitchen",
+      "item": [
+        {
+          "name": "Auth",
+          "item": [
+            {
+              "name": "Password",
+              "item": [
+                {
+                  "name": "Forget Password",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"username\": \"rohitwebstep@gmail.com\"\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{appHost}}/api/v1/kitchen/auth/forgot-password",
+                      "host": [
+                        "{{appHost}}"
+                      ],
+                      "path": [
+                        "api",
+                        "v1",
+                        "kitchen",
+                        "auth",
+                        "forgot-password"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Reset Password",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"token\": \"a4159031ac0aa78b89fe24c643c2d359613a78a7890ddd6599c9fc216f04c1e2\",\r\n    \"password\": \"87654321\",\r\n    \"confirmPassword\": \"87654321\"\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{appHost}}/api/v1/kitchen/auth/reset-password",
+                      "host": [
+                        "{{appHost}}"
+                      ],
+                      "path": [
+                        "api",
+                        "v1",
+                        "kitchen",
+                        "auth",
+                        "reset-password"
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Registration",
+              "item": [
+                {
+                  "name": "Registration",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": [
+                        {
+                          "key": "profilePicture",
+                          "type": "file",
+                          "uuid": "69d73d2d-2147-4d80-8b53-59d1e448746c",
+                          "src": "postman-cloud:///1f11cfde-2e3c-4e80-941c-658dc4a93f28"
+                        },
+                        {
+                          "key": "kitchenName",
+                          "value": "Rohit Kitchen",
+                          "type": "text"
+                        },
+                        {
+                          "key": "phone",
+                          "value": "7404113228",
+                          "type": "text"
+                        },
+                        {
+                          "key": "email",
+                          "value": "rohitwebstep@gmail.com",
+                          "type": "text"
+                        },
+                        {
+                          "key": "password",
+                          "value": "12345678",
+                          "type": "text"
+                        },
+                        {
+                          "key": "contactTitle",
+                          "value": "MR",
+                          "type": "text"
+                        },
+                        {
+                          "key": "contactFirstName",
+                          "value": "Rohit",
+                          "type": "text"
+                        },
+                        {
+                          "key": "contactLastName",
+                          "value": "Kumar",
+                          "type": "text"
+                        },
+                        {
+                          "key": "contactEmail",
+                          "value": "rohit.contact@gmail.com",
+                          "type": "text"
+                        },
+                        {
+                          "key": "contactPhone",
+                          "value": "7404113228",
+                          "type": "text"
+                        }
+                      ]
+                    },
+                    "url": {
+                      "raw": "{{appHost}}/api/v1/kitchen/auth/register",
+                      "host": [
+                        "{{appHost}}"
+                      ],
+                      "path": [
+                        "api",
+                        "v1",
+                        "kitchen",
+                        "auth",
+                        "register"
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Login",
+              "item": [
+                {
+                  "name": "Login",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "// 1. Parse the JSON response\r",
+                          "const response = pm.response.json();\r",
+                          "\r",
+                          "// 2. Extract the token safely\r",
+                          "if (response.status && response.data && response.data.token) {\r",
+                          "    \r",
+                          "    // 3. Save to Collection Variable\r",
+                          "    pm.collectionVariables.set(\"kitchenToken\", response.data.token);\r",
+                          "    \r",
+                          "    console.log(\"🚀 Collection Variable 'kitchenToken' updated!\");\r",
+                          "} else {\r",
+                          "    console.warn(\"⚠️ Could not find token in the response.\");\r",
+                          "}"
+                        ],
+                        "type": "text/javascript",
+                        "packages": {},
+                        "requests": {}
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"username\": \"rohitwebstep@gmail.com\",\r\n    \"password\": \"12345678\"\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{appHost}}/api/v1/kitchen/auth/login",
+                      "host": [
+                        "{{appHost}}"
+                      ],
+                      "path": [
+                        "api",
+                        "v1",
+                        "kitchen",
+                        "auth",
+                        "login"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Verify Login",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{kitchenToken}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{appHost}}/api/v1/kitchen/auth/verify",
+                      "host": [
+                        "{{appHost}}"
+                      ],
+                      "path": [
+                        "api",
+                        "v1",
+                        "kitchen",
+                        "auth",
+                        "verify"
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Onboarding",
+          "item": [
+            {
+              "name": "Onboarding",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{kitchenToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "fssaiNumber",
+                      "value": "12345678901234",
+                      "type": "text",
+                      "uuid": "83d79cab-b76a-48b5-83b9-3139948d1221"
+                    },
+                    {
+                      "key": "fssaiFile",
+                      "type": "file",
+                      "uuid": "f88d7d23-74ea-4a67-b111-ad491282a583",
+                      "src": "postman-cloud:///1f11cfde-2e3c-4e80-941c-658dc4a93f28"
+                    },
+                    {
+                      "key": "gstNumber",
+                      "value": "",
+                      "type": "text",
+                      "uuid": "42262474-e3be-4045-b1b9-15c2b536e23e"
+                    },
+                    {
+                      "key": "gstFile",
+                      "type": "file",
+                      "uuid": "bef1a040-0977-454f-a95c-3c10fdfff905",
+                      "src": "postman-cloud:///1f11cfde-2e3c-4e80-941c-658dc4a93f28"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{appHost}}/api/v1/kitchen/onboarding",
+                  "host": [
+                    "{{appHost}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "kitchen",
+                    "onboarding"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Select Plan",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{kitchenToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"subscriptionId\": 1,\r\n    \"billingCycle\": \"MONTHLY\",\r\n    \"duration\": 1\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{appHost}}/api/v1/kitchen/subscription/select",
+                  "host": [
+                    "{{appHost}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "kitchen",
+                    "subscription",
+                    "select"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Branch",
+          "item": [
+            {
+              "name": "Management",
+              "item": [
+                {
+                  "name": "List",
+                  "request": {
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{kitchenToken}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{appHost}}/api/v1/kitchen/branch",
+                      "host": [
+                        "{{appHost}}"
+                      ],
+                      "path": [
+                        "api",
+                        "v1",
+                        "kitchen",
+                        "branch"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Get Branch",
+                  "request": {
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{kitchenToken}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{appHost}}/api/v1/kitchen/branch/{{branchId}}",
+                      "host": [
+                        "{{appHost}}"
+                      ],
+                      "path": [
+                        "api",
+                        "v1",
+                        "kitchen",
+                        "branch",
+                        "{{branchId}}"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Create",
+                  "request": {
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{kitchenToken}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"name\": \"Main Branch\",\r\n    \"addressLine1\": \"Shop No 12, Ground Floor\",\r\n    \"pincode\": \"201301\",\r\n    \"countryId\": 101,\r\n    \"stateId\": 4007,\r\n    \"cityId\": 57675,\r\n    \"contactTitle\": \"MR\",\r\n    \"contactFirstName\": \"Rahul\",\r\n    \"contactEmail\": \"rahul@example.com\",\r\n    \"contactPhone\": \"9876543210\",\r\n    \"cuisines\": [\r\n        {\r\n            \"id\": 1\r\n        },\r\n        {\r\n            \"name\": \"Fusion\"\r\n        }\r\n    ]\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{appHost}}/api/v1/kitchen/branch",
+                      "host": [
+                        "{{appHost}}"
+                      ],
+                      "path": [
+                        "api",
+                        "v1",
+                        "kitchen",
+                        "branch"
+                      ]
+                    }
+                  },
+                  "response": [
+                    {
+                      "name": "200",
+                      "originalRequest": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\r\n    \"name\": \"Main Branch\",\r\n    \"addressLine1\": \"Shop No 12, Ground Floor\",\r\n    \"addressLine2\": \"ABC Complex\",\r\n    \"landmark\": \"Near Metro Station\",\r\n    \"area\": \"Sector 62\",\r\n    \"pincode\": \"201301\",\r\n    \"countryId\": 101,\r\n    \"stateId\": 4007,\r\n    \"cityId\": 57675,\r\n    \"contactTitle\": \"MR\",\r\n    \"contactFirstName\": \"Rahul\",\r\n    \"contactLastName\": \"Sharma\",\r\n    \"contactEmail\": \"rahul@example.com\",\r\n    \"contactPhone\": \"9876543210\"\r\n}",
+                          "options": {
+                            "raw": {
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{appHost}}/api/v1/kitchen/branch",
+                          "host": [
+                            "{{appHost}}"
+                          ],
+                          "path": [
+                            "api",
+                            "v1",
+                            "kitchen",
+                            "branch"
+                          ]
+                        }
+                      },
+                      "status": "Created",
+                      "code": 201,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json",
+                          "description": "",
+                          "type": "text"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n    \"status\": true,\n    \"message\": \"Branch created successfully\"\n}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Ingredient",
+              "item": [
+                {
+                  "name": "Stock",
+                  "item": [
+                    {
+                      "name": "Create",
+                      "request": {
+                        "auth": {
+                          "type": "bearer",
+                          "bearer": [
+                            {
+                              "key": "token",
+                              "value": "{{kitchenToken}}",
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\r\n    \"stocks\": [\r\n        {\r\n            \"id\": 1,\r\n            \"stock\": 50,\r\n            \"expireAt\": \"2026-12-31T00:00:00.000Z\"\r\n        },\r\n        {\r\n            \"id\": 2,\r\n            \"stock\": 120\r\n        }\r\n    ]\r\n}",
+                          "options": {
+                            "raw": {
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{appHost}}/api/v1/kitchen/branch/{{branchId}}/ingredient/stock",
+                          "host": [
+                            "{{appHost}}"
+                          ],
+                          "path": [
+                            "api",
+                            "v1",
+                            "kitchen",
+                            "branch",
+                            "{{branchId}}",
+                            "ingredient",
+                            "stock"
+                          ]
+                        }
+                      },
+                      "response": [
+                        {
+                          "name": "200",
+                          "originalRequest": {
+                            "method": "POST",
+                            "header": [],
+                            "body": {
+                              "mode": "raw",
+                              "raw": "{\r\n    \"name\": \"Main Branch\",\r\n    \"addressLine1\": \"Shop No 12, Ground Floor\",\r\n    \"addressLine2\": \"ABC Complex\",\r\n    \"landmark\": \"Near Metro Station\",\r\n    \"area\": \"Sector 62\",\r\n    \"pincode\": \"201301\",\r\n    \"countryId\": 101,\r\n    \"stateId\": 4007,\r\n    \"cityId\": 57675,\r\n    \"contactTitle\": \"MR\",\r\n    \"contactFirstName\": \"Rahul\",\r\n    \"contactLastName\": \"Sharma\",\r\n    \"contactEmail\": \"rahul@example.com\",\r\n    \"contactPhone\": \"9876543210\"\r\n}",
+                              "options": {
+                                "raw": {
+                                  "language": "json"
+                                }
+                              }
+                            },
+                            "url": {
+                              "raw": "{{appHost}}/api/v1/kitchen/branch",
+                              "host": [
+                                "{{appHost}}"
+                              ],
+                              "path": [
+                                "api",
+                                "v1",
+                                "kitchen",
+                                "branch"
+                              ]
+                            }
+                          },
+                          "status": "Created",
+                          "code": 201,
+                          "_postman_previewlanguage": "json",
+                          "header": [
+                            {
+                              "key": "Content-Type",
+                              "value": "application/json",
+                              "description": "",
+                              "type": "text"
+                            }
+                          ],
+                          "cookie": [],
+                          "body": "{\n    \"status\": true,\n    \"message\": \"Branch created successfully\"\n}"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "Create",
+                  "request": {
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{kitchenToken}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"ingredients\": [\r\n        {\r\n            \"id\": 1,\r\n            \"unit\": \"KG\"\r\n        },\r\n        {\r\n            \"id\": 2,\r\n            \"unit\": \"GM\"\r\n        },\r\n        {\r\n            \"name\": \"Tomato\",\r\n            \"category\": \"Vegetable\",\r\n            \"image\": \"https://cdn.example.com/ingredients/tomato.png\",\r\n            \"unit\": \"KG\"\r\n        },\r\n        {\r\n            \"name\": \"Cheese\",\r\n            \"category\": \"Dairy\",\r\n            \"image\": \"https://cdn.example.com/ingredients/cheese.png\",\r\n            \"unit\": \"GM\"\r\n        },\r\n        {\r\n            \"name\": \"Milk\",\r\n            \"category\": \"Dairy\",\r\n            \"image\": \"https://cdn.example.com/ingredients/milk.png\",\r\n            \"unit\": \"PACKET\"\r\n        },\r\n        {\r\n            \"name\": \"Chicken Breast\",\r\n            \"category\": \"Meat\",\r\n            \"image\": \"https://cdn.example.com/ingredients/chicken.png\",\r\n            \"unit\": \"KG\"\r\n        },\r\n        {\r\n            \"name\": \"Salt\",\r\n            \"category\": \"Spice\",\r\n            \"image\": \"https://cdn.example.com/ingredients/salt.png\",\r\n            \"unit\": \"GM\"\r\n        },\r\n        {\r\n            \"name\": \"Butter\",\r\n            \"category\": \"Dairy\",\r\n            \"image\": \"https://cdn.example.com/ingredients/butter.png\",\r\n            \"unit\": \"PACKET\"\r\n        },\r\n        {\r\n            \"name\": \"Egg\",\r\n            \"category\": \"Protein\",\r\n            \"image\": \"https://cdn.example.com/ingredients/egg.png\",\r\n            \"unit\": \"ITEM\"\r\n        },\r\n        {\r\n            \"name\": \"Rice\",\r\n            \"category\": \"Grain\",\r\n            \"image\": \"https://cdn.example.com/ingredients/rice.png\",\r\n            \"unit\": \"KG\"\r\n        },\r\n        {\r\n            \"name\": \"Black Pepper\",\r\n            \"category\": \"Spice\",\r\n            \"image\": \"https://cdn.example.com/ingredients/black-pepper.png\",\r\n            \"unit\": \"GM\"\r\n        },\r\n        {\r\n            \"name\": \"Paneer\",\r\n            \"category\": \"Dairy\",\r\n            \"image\": \"https://cdn.example.com/ingredients/paneer.png\",\r\n            \"unit\": \"KG\"\r\n        }\r\n    ]\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{appHost}}/api/v1/kitchen/branch/{{branchId}}/ingredient",
+                      "host": [
+                        "{{appHost}}"
+                      ],
+                      "path": [
+                        "api",
+                        "v1",
+                        "kitchen",
+                        "branch",
+                        "{{branchId}}",
+                        "ingredient"
+                      ]
+                    }
+                  },
+                  "response": [
+                    {
+                      "name": "200",
+                      "originalRequest": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\r\n    \"name\": \"Main Branch\",\r\n    \"addressLine1\": \"Shop No 12, Ground Floor\",\r\n    \"addressLine2\": \"ABC Complex\",\r\n    \"landmark\": \"Near Metro Station\",\r\n    \"area\": \"Sector 62\",\r\n    \"pincode\": \"201301\",\r\n    \"countryId\": 101,\r\n    \"stateId\": 4007,\r\n    \"cityId\": 57675,\r\n    \"contactTitle\": \"MR\",\r\n    \"contactFirstName\": \"Rahul\",\r\n    \"contactLastName\": \"Sharma\",\r\n    \"contactEmail\": \"rahul@example.com\",\r\n    \"contactPhone\": \"9876543210\"\r\n}",
+                          "options": {
+                            "raw": {
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{appHost}}/api/v1/kitchen/branch",
+                          "host": [
+                            "{{appHost}}"
+                          ],
+                          "path": [
+                            "api",
+                            "v1",
+                            "kitchen",
+                            "branch"
+                          ]
+                        }
+                      },
+                      "status": "Created",
+                      "code": 201,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json",
+                          "description": "",
+                          "type": "text"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n    \"status\": true,\n    \"message\": \"Branch created successfully\"\n}"
+                    }
+                  ]
+                },
+                {
+                  "name": "List",
+                  "request": {
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{kitchenToken}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{appHost}}/api/v1/kitchen/branch/{{branchId}}/ingredient?name=Rice",
+                      "host": [
+                        "{{appHost}}"
+                      ],
+                      "path": [
+                        "api",
+                        "v1",
+                        "kitchen",
+                        "branch",
+                        "{{branchId}}",
+                        "ingredient"
+                      ],
+                      "query": [
+                        {
+                          "key": "name",
+                          "value": "Rice",
+                          "type": "text"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Menu",
+              "item": [
+                {
+                  "name": "Create",
+                  "request": {
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{kitchenToken}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"name\": \"Paneer Butter Masala\",\r\n    \"description\": \"Creamy paneer curry with rich tomato gravy\",\r\n    \"price\": 299,\r\n    \"category\": {\r\n        \"name\": \"Veg.\"\r\n    },\r\n    \"subCategory\": {\r\n        \"name\": \"Paneer Specials\"\r\n    },\r\n    \"ingredients\": [\r\n        {\r\n            \"id\": 1,\r\n            \"quantity\": 0.5\r\n        },\r\n        {\r\n            \"id\": 2,\r\n            \"quantity\": 0.2\r\n        }\r\n    ]\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{appHost}}/api/v1/kitchen/branch/{{branchId}}/menu",
+                      "host": [
+                        "{{appHost}}"
+                      ],
+                      "path": [
+                        "api",
+                        "v1",
+                        "kitchen",
+                        "branch",
+                        "{{branchId}}",
+                        "menu"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "List",
+                  "request": {
+                    "auth": {
+                      "type": "bearer",
+                      "bearer": [
+                        {
+                          "key": "token",
+                          "value": "{{kitchenToken}}",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{appHost}}/api/v1/kitchen/branch/{{branchId}}/menu",
+                      "host": [
+                        "{{appHost}}"
+                      ],
+                      "path": [
+                        "api",
+                        "v1",
+                        "kitchen",
+                        "branch",
+                        "{{branchId}}",
+                        "menu"
+                      ],
+                      "query": [
+                        {
+                          "key": "name",
+                          "value": "",
+                          "disabled": true
+                        },
+                        {
+                          "key": "category",
+                          "value": "",
+                          "disabled": true
+                        },
+                        {
+                          "key": "categoryId",
+                          "value": "",
+                          "disabled": true
+                        },
+                        {
+                          "key": "subCategory",
+                          "value": "",
+                          "disabled": true
+                        },
+                        {
+                          "key": "subCategoryId",
+                          "value": "",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Hello",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"username\": \"sisodiadude\",\r\n    \"password\": \"123456\"\r\n}"
+            },
+            "url": {
+              "raw": "{{appHost}}/api/v1/system/hello",
+              "host": [
+                "{{appHost}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "system",
+                "hello"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Info",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"username\": \"sisodiadude\",\r\n    \"password\": \"123456\"\r\n}"
+            },
+            "url": {
+              "raw": "{{appHost}}/api/v1/system/info",
+              "host": [
+                "{{appHost}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "system",
+                "info"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Health",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"username\": \"sisodiadude\",\r\n    \"password\": \"123456\"\r\n}"
+            },
+            "url": {
+              "raw": "{{appHost}}/api/v1/system/health",
+              "host": [
+                "{{appHost}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "system",
+                "health"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Master",
+      "item": [
+        {
+          "name": "Cuisine",
+          "item": [
+            {
+              "name": "List",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{appHost}}/api/v1/master/cuisine?page=1&limit=10&name&category&status=ACTIVE",
+                  "host": [
+                    "{{appHost}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "master",
+                    "cuisine"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "name",
+                      "value": null
+                    },
+                    {
+                      "key": "category",
+                      "value": null
+                    },
+                    {
+                      "key": "status",
+                      "value": "ACTIVE",
+                      "description": "PENDING, ACTIVE, INACTIVE, DISCONTINUED"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Ingredient",
+          "item": [
+            {
+              "name": "List",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{appHost}}/api/v1/master/ingredient?page=1&limit=10&name=Tomato&category&status=ACTIVE",
+                  "host": [
+                    "{{appHost}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "master",
+                    "ingredient"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "name",
+                      "value": "Tomato"
+                    },
+                    {
+                      "key": "category",
+                      "value": null
+                    },
+                    {
+                      "key": "status",
+                      "value": "ACTIVE",
+                      "description": "PENDING, ACTIVE, INACTIVE, DISCONTINUED"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "appHost",
+      "value": ""
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "kitchenToken",
+      "value": ""
+    },
+    {
+      "key": "branchId",
+      "value": ""
+    }
+  ]
+}

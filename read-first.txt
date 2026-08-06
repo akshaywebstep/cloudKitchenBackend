@@ -1,0 +1,18 @@
+# Install project dependencies
+npm install
+
+# Validate Prisma schema
+npx prisma validate
+
+# Generate Prisma Client from schema
+npx prisma generate
+
+# Reset the DB (⚠️ deletes all data)
+npx prisma migrate reset --force
+
+# Apply migrations and create tables
+npx prisma migrate dev --name init
+
+# Update Prisma CLI and Client
+npm i --save-dev prisma@latest
+npm i @prisma/client@latest
