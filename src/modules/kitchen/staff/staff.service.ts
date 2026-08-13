@@ -6,10 +6,11 @@ import { prisma } from "../../../../lib/prisma";
 import stringHelper from "../../../core/helpers/string.helper";
 
 // =====================================================
-// ✅ CREATE STAFF (Kitchen Staff, with branch access)
+// ✅ CREATE STAFF (Kitchen Staff, with profile picture & branch access)
 // =====================================================
 export const createStaff = async (data: {
     kitchenId: number;
+    profilePicture?: string; 
     title?: string;
     firstName: string;
     lastName?: string;
@@ -17,14 +18,30 @@ export const createStaff = async (data: {
     phone: string;
     password: string;
     roleId: number;
-    branchIds: number[];
+    branchIds?: number[];
 }) => {
-    const { kitchenId, title, firstName, lastName, email, phone, password, roleId, branchIds } = data;
+    const { 
+        kitchenId, 
+        profilePicture, 
+        title, 
+        firstName, 
+        lastName, 
+        email, 
+        phone, 
+        password, 
+        roleId, 
+        branchIds = [] 
+    } = data;
 
     debugHelper.debug("[Staff Service] createStaff called with:", JSON.stringify(data));
 
     try {
-        // ✅ Uniqueness check (email/phone)
+        // ✅ 1. Validate Required Profile Picture (Agar profile compulsory rakhni hai)
+        if (!profilePicture) {
+            return { status: false, message: "Profile picture is required" };
+        }
+
+        // ✅ 2. Uniqueness check (email/phone)
         const existing = await prisma.user.findFirst({
             where: { OR: [{ email }, { phone }] },
             select: { email: true, phone: true },
@@ -35,19 +52,22 @@ export const createStaff = async (data: {
             return { status: false, message: `${field} already exists` };
         }
 
-        // ✅ Role validation — must belong to this kitchen
+        // ✅ 3. Role validation — must belong to this kitchen
         const role = await prisma.role.findFirst({
-            where: { id: roleId, userId: BigInt(kitchenId), status: Status.ACTIVE },
+            where: { id: BigInt(roleId), userId: BigInt(kitchenId), status: Status.ACTIVE },
         });
 
         if (!role) {
             return { status: false, message: "Invalid role for this kitchen" };
         }
 
-        // ✅ BranchIds validation — must belong to this kitchen
-        if (branchIds.length > 0) {
+        // ✅ 4. BranchIds validation — must belong to this kitchen
+        if (branchIds && branchIds.length > 0) {
             const validBranches = await prisma.branch.findMany({
-                where: { id: { in: branchIds.map((id) => BigInt(id)) }, userId: BigInt(kitchenId) },
+                where: { 
+                    id: { in: branchIds.map((id) => BigInt(id)) }, 
+                    userId: BigInt(kitchenId) 
+                },
                 select: { id: true },
             });
 
@@ -58,13 +78,14 @@ export const createStaff = async (data: {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        // 🧠 Transaction for User Creation & Access Mapping
         const result = await prisma.$transaction(async (tx) => {
             // 1️⃣ Create staff user
             const staff = await tx.user.create({
                 data: {
                     parentId: BigInt(kitchenId),
                     rootId: BigInt(kitchenId),
-                    profilePicture: "",
+                    profilePicture: profilePicture || "", 
                     title,
                     firstName,
                     lastName,
@@ -78,7 +99,7 @@ export const createStaff = async (data: {
             });
 
             // 2️⃣ Save branch access (if any)
-            if (branchIds.length > 0) {
+            if (branchIds && branchIds.length > 0) {
                 await tx.userBranchAccess.createMany({
                     data: [...new Set(branchIds)].map((branchId) => ({
                         userId: staff.id,
@@ -92,7 +113,11 @@ export const createStaff = async (data: {
                 where: { id: staff.id },
                 include: {
                     role: true,
-                    branchAccess: { include: { branch: { select: { id: true, name: true } } } },
+                    branchAccess: { 
+                        include: { 
+                            branch: { select: { id: true, name: true } } 
+                        } 
+                    },
                 },
             });
         });
@@ -107,6 +132,81 @@ export const createStaff = async (data: {
     } catch (error: any) {
         debugHelper.debugError("[Staff Service] createStaff failed:", error);
         return { status: false, message: error.message || "Failed to create staff" };
+    }
+};
+
+// =====================================================
+// 📋 GET STAFF FORM OPTIONS (Roles with User, Branches & Assigned Access)
+// =====================================================
+export const getStaffFormOptions = async (kitchenId: number, staffUserId?: number) => {
+    try {
+        // 1️⃣ Kitchen ke Active Roles + User Info
+        const roles = await prisma.role.findMany({
+            where: {
+                userId: BigInt(kitchenId),
+                status: Status.ACTIVE
+            },
+            select: {
+                id: true,
+                name: true,
+                status: true,
+                createdAt: true,
+                user: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        email: true
+                    }
+                }
+            }
+        });
+
+        // 2️⃣ Kitchen ke Branches
+        const branches = await prisma.branch.findMany({
+            where: {
+                userId: BigInt(kitchenId)
+            },
+            select: {
+                id: true,
+                name: true,
+                city: { select: { id: true, name: true } }
+            }
+        });
+
+        // 3️⃣ Existing Access (if Editing Staff)
+        let assignedBranchIds: number[] = [];
+        let assignedRoleId: number | null = null;
+
+        if (staffUserId) {
+            // Assigned Branches
+            const existingAccess = await prisma.userBranchAccess.findMany({
+                where: { userId: BigInt(staffUserId) },
+                select: { branchId: true }
+            });
+            assignedBranchIds = existingAccess.map((item) => Number(item.branchId));
+
+            // Assigned Role
+            const staffUser = await prisma.user.findUnique({
+                where: { id: BigInt(staffUserId) },
+                select: { roleId: true }
+            });
+            assignedRoleId = staffUser?.roleId ? Number(staffUser.roleId) : null;
+        }
+
+        return {
+            status: true,
+            data: {
+                roles: stringHelper.convertBigInt(roles, "number"),
+                branches: stringHelper.convertBigInt(branches, "number"),
+                assignedRoleId,
+                assignedBranchIds
+            },
+            message: "Staff form options retrieved successfully"
+        };
+    } catch (error: any) {
+        debugHelper.debugError("[Staff Service] getStaffFormOptions failed:", error);
+        return { status: false, message: error.message || "Failed to retrieve form options" };
     }
 };
 
@@ -190,12 +290,13 @@ export const getStaffById = async (id: number) => {
 };
 
 // =====================================================
-// ✏️ UPDATE STAFF (with branch access resync)
+// ✏️ UPDATE STAFF (with profile picture & branch access resync)
 // =====================================================
 export const updateStaff = async (
     id: number,
     kitchenId: number,
     data: {
+        profilePicture?: string; // 👈 Profile picture path parameter
         title?: string;
         firstName?: string;
         lastName?: string;
@@ -209,8 +310,13 @@ export const updateStaff = async (
     try {
         debugHelper.debug(`[Staff Service] updateStaff called for id ${id}:`, JSON.stringify(data));
 
+        // 1️⃣ Verify Staff Existence for this Kitchen
         const existing = await prisma.user.findFirst({
-            where: { id: BigInt(id), parentId: BigInt(kitchenId), userType: UserType.KITCHEN_STAFF },
+            where: { 
+                id: BigInt(id), 
+                parentId: BigInt(kitchenId), 
+                userType: UserType.KITCHEN_STAFF 
+            },
         });
 
         if (!existing) {
@@ -219,20 +325,46 @@ export const updateStaff = async (
 
         const { branchIds, ...staffFields } = data;
 
-        // ✅ Role validation (if provided)
+        // 2️⃣ Uniqueness Check for Email/Phone (agar edit time par update kiye ho)
+        if (staffFields.email || staffFields.phone) {
+            const conflict = await prisma.user.findFirst({
+                where: {
+                    id: { not: BigInt(id) }, // Dusre users me search karega
+                    OR: [
+                        ...(staffFields.email ? [{ email: staffFields.email }] : []),
+                        ...(staffFields.phone ? [{ phone: staffFields.phone }] : [])
+                    ]
+                },
+                select: { email: true, phone: true }
+            });
+
+            if (conflict) {
+                const field = conflict.email === staffFields.email ? "Email" : "Phone";
+                return { status: false, message: `${field} is already in use by another account` };
+            }
+        }
+
+        // 3️⃣ Role validation (if roleId provided)
         if (staffFields.roleId) {
             const role = await prisma.role.findFirst({
-                where: { id: staffFields.roleId, userId: BigInt(kitchenId), status: Status.ACTIVE },
+                where: { 
+                    id: BigInt(staffFields.roleId), 
+                    userId: BigInt(kitchenId), 
+                    status: Status.ACTIVE 
+                },
             });
             if (!role) {
                 return { status: false, message: "Invalid role for this kitchen" };
             }
         }
 
-        // ✅ BranchIds validation (if provided)
+        // 4️⃣ BranchIds validation (if branchIds provided)
         if (branchIds !== undefined && branchIds.length > 0) {
             const validBranches = await prisma.branch.findMany({
-                where: { id: { in: branchIds.map((bid) => BigInt(bid)) }, userId: BigInt(kitchenId) },
+                where: { 
+                    id: { in: branchIds.map((bid) => BigInt(bid)) }, 
+                    userId: BigInt(kitchenId) 
+                },
                 select: { id: true },
             });
             if (validBranches.length !== new Set(branchIds).size) {
@@ -240,12 +372,14 @@ export const updateStaff = async (
             }
         }
 
+        // 5️⃣ Prisma Transaction
         const result = await prisma.$transaction(async (tx) => {
-            // 1️⃣ Update staff fields (if any)
+            // Step A: Update Staff User Fields
             if (Object.keys(staffFields).length > 0) {
                 await tx.user.update({
                     where: { id: BigInt(id) },
                     data: {
+                        ...(staffFields.profilePicture ? { profilePicture: staffFields.profilePicture } : {}), // 👈 Update DP Path
                         ...(staffFields.title !== undefined ? { title: staffFields.title } : {}),
                         ...(staffFields.firstName ? { firstName: staffFields.firstName } : {}),
                         ...(staffFields.lastName !== undefined ? { lastName: staffFields.lastName } : {}),
@@ -257,7 +391,7 @@ export const updateStaff = async (
                 });
             }
 
-            // 2️⃣ Replace branch access (only if branchIds explicitly provided)
+            // Step B: Resync Branch Access Mapping (Delete Old & Insert New)
             if (branchIds !== undefined) {
                 await tx.userBranchAccess.deleteMany({ where: { userId: BigInt(id) } });
 
@@ -272,11 +406,16 @@ export const updateStaff = async (
                 }
             }
 
+            // Step C: Fetch updated object with relations
             return tx.user.findUnique({
                 where: { id: BigInt(id) },
                 include: {
                     role: true,
-                    branchAccess: { include: { branch: { select: { id: true, name: true } } } },
+                    branchAccess: { 
+                        include: { 
+                            branch: { select: { id: true, name: true } } 
+                        } 
+                    },
                 },
             });
         });
@@ -294,25 +433,3 @@ export const updateStaff = async (
     }
 };
 
-// =====================================================
-// 🗑️ DELETE STAFF (soft delete)
-// =====================================================
-export const deleteStaff = async (id: number, kitchenId: number) => {
-    try {
-        const existing = await prisma.user.findFirst({
-            where: { id: BigInt(id), parentId: BigInt(kitchenId), userType: UserType.KITCHEN_STAFF },
-        });
-
-        if (!existing) {
-            return { status: false, message: "Staff not found for this kitchen" };
-        }
-
-        const result = await staffRepo.update(id, { status: Status.INACTIVE });
-
-        if (!result.status) return { status: false, message: result.message };
-
-        return { status: true, message: "Staff deleted successfully" };
-    } catch (error: any) {
-        return { status: false, message: error.message || "Failed to delete staff" };
-    }
-};
