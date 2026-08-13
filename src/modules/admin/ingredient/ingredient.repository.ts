@@ -1,193 +1,95 @@
-// src/modules/admin/admin/admin.repository.ts
+import { prisma, Prisma } from '../../../../lib/prisma';
+import stringHelper from '../../../core/helpers/string.helper';
 
-import { prisma, Prisma } from "../../../../../lib/prisma";
-import stringHelper from "../../../../core/helpers/string.helper";
-
-const branchIngredientInventoryRepo = {
-    // ---------- Find Admin(Unique) ----------
-    async findUnique(options: Prisma.BranchIngredientInventoryFindUniqueArgs): Promise<{ status: boolean; data?: any; message: string }> {
+const ingredientRepo = {
+    async findUnique(options: Prisma.IngredientFindUniqueArgs) {
         try {
-            if (!options.where) {
-                throw new Error("Unique filter (where) is required");
-            }
+            if (!options.where) throw new Error("Unique filter (where) is required");
 
-            const branchIngredientInventory = await prisma.branchIngredientInventory.findUnique(options);
+            const ingredient = await prisma.ingredient.findUnique(options);
 
-            if (!branchIngredientInventory) {
-                return {
-                    status: false,
-                    message: "BranchIngredientInventory not found",
-                };
+            if (!ingredient) {
+                return { status: false, message: "Ingredient not found" };
             }
 
             return {
                 status: true,
-                data: stringHelper.convertBigInt(branchIngredientInventory, "number"),
-                message: branchIngredientInventory ? "Admin record retrieved successfully" : "Admin not found",
+                data: stringHelper.convertBigInt(ingredient, "number"),
+                message: "Ingredient retrieved successfully",
             };
         } catch (err: any) {
-            return {
-                status: false,
-                message: err.message || "Unable to retrieve branchIngredientInventory record",
-            };
+            return { status: false, message: err.message || "Unable to retrieve ingredient" };
         }
     },
 
-    // ---------- Find Admin(First Match) ----------
-    async findFirst(options: Prisma.BranchIngredientInventoryFindFirstArgs): Promise<{ status: boolean; data?: any; message: string }> {
+    async findFirst(options: Prisma.IngredientFindFirstArgs) {
         try {
-            if (!options.where) {
-                throw new Error("Filter (where) is required");
-            }
+            if (!options.where) throw new Error("Filter (where) is required");
 
-            const branchIngredientInventory = await prisma.branchIngredientInventory.findFirst(options);
+            const ingredient = await prisma.ingredient.findFirst(options);
 
-            if (!branchIngredientInventory) {
-                return {
-                    status: false,
-                    message: "BranchIngredientInventory not found",
-                };
+            if (!ingredient) {
+                return { status: false, message: "Ingredient not found" };
             }
 
             return {
                 status: true,
-                data: stringHelper.convertBigInt(branchIngredientInventory, "number"),
-                message: branchIngredientInventory ? "Admin record retrieved successfully" : "Admin not found",
+                data: stringHelper.convertBigInt(ingredient, "number"),
+                message: "Ingredient retrieved successfully",
             };
         } catch (err: any) {
-            return {
-                status: false,
-                message: err.message || "Unable to retrieve branchIngredientInventory record",
-            };
+            return { status: false, message: err.message || "Unable to retrieve ingredient" };
         }
     },
 
-    // ---------- Find Multiple Admins ----------
-    async findMany(options: Prisma.BranchIngredientInventoryFindManyArgs = {}): Promise<{ status: boolean; data?: any; message: string }> {
+    async findMany(options: Prisma.IngredientFindManyArgs = {}) {
         try {
-            const branchIngredientInventorys = await prisma.branchIngredientInventory.findMany(options);
+            const ingredients = await prisma.ingredient.findMany(options);
 
             return {
                 status: true,
-                data: stringHelper.convertBigInt(branchIngredientInventorys, "number"),
-                message: "Admin records retrieved successfully",
+                data: stringHelper.convertBigInt(ingredients, "number"),
+                message: "Ingredient records retrieved successfully",
             };
         } catch (err: any) {
-            return {
-                status: false,
-                message: err.message || "Unable to retrieve branchIngredientInventory records",
-            };
+            return { status: false, message: err.message || "Unable to retrieve ingredient records" };
         }
     },
 
-    // ---------- Count Admins ----------
-    async count(options: { where?: Prisma.BranchIngredientInventoryWhereInput } = {}): Promise<{ status: boolean; data?: number; message: string }> {
+    async count(options: { where?: Prisma.IngredientWhereInput } = {}) {
         try {
-            const count = await prisma.branchIngredientInventory.count({
-                where: options.where,
-            });
+            const count = await prisma.ingredient.count({ where: options.where });
 
-            return {
-                status: true,
-                data: count,
-                message: "Admin count retrieved successfully",
-            };
+            return { status: true, data: count, message: "Ingredient count retrieved successfully" };
         } catch (err: any) {
-            return {
-                status: false,
-                message: err.message || "Unable to count branchIngredientInventory records",
-            };
+            return { status: false, message: err.message || "Unable to count ingredient records" };
         }
     },
 
-    // ---------- Create Admin ----------
     async create(
-        data: Prisma.BranchIngredientInventoryCreateInput,
-        options: Partial<Prisma.BranchIngredientInventoryCreateArgs> = {}
-    ): Promise<{ status: boolean; data?: any; message: string }> {
+        data: Prisma.IngredientCreateInput,
+        options: Partial<Prisma.IngredientCreateArgs> = {}
+    ) {
         try {
-            const branchIngredientInventory = await prisma.branchIngredientInventory.create({
-                data,
-                ...options,
-            });
+            const ingredient = await prisma.ingredient.create({ data, ...options });
 
             return {
                 status: true,
-                data: stringHelper.convertBigInt(branchIngredientInventory, "number"),
-                message: "Admin created successfully",
+                data: stringHelper.convertBigInt(ingredient, "number"),
+                message: "Ingredient created successfully",
             };
         } catch (err: any) {
-            return {
-                status: false,
-                message: err.message || "Failed to create branchIngredientInventory",
-            };
+            return { status: false, message: err.message || "Failed to create ingredient" };
         }
     },
 
-    // ---------- Create Many BranchIngredientInventorys ----------
-    async createMany(
-        options: Prisma.BranchIngredientInventoryCreateManyArgs
-    ): Promise<{ status: boolean; data?: { count: number }; message: string }> {
-        try {
-            if (!options.data || (Array.isArray(options.data) && (options.data as any[]).length === 0)) {
-                return {
-                    status: false,
-                    message: "No data provided for createMany",
-                };
-            }
-
-            const result = await prisma.branchIngredientInventory.createMany({
-                ...options,
-                skipDuplicates: options.skipDuplicates ?? true, // safe default — skips already-assigned permissions
-            });
-
-            return {
-                status: true,
-                data: { count: result.count },
-                message: `${result.count} BranchIngredientInventory record(s) created successfully`,
-            };
-        } catch (err: any) {
-            return {
-                status: false,
-                message: err.message || "Failed to create branchIngredientInventory records",
-            };
-        }
-    },
-
-    // ---------- Delete Many BranchIngredientInventorys ----------
-    async deleteMany(
-        options: { where: Prisma.BranchIngredientInventoryWhereInput }
-    ): Promise<{ status: boolean; data?: { count: number }; message: string }> {
-        try {
-            if (!options.where) {
-                throw new Error("Filter (where) is required for deleteMany");
-            }
-
-            const result = await prisma.branchIngredientInventory.deleteMany({
-                where: options.where,
-            });
-
-            return {
-                status: true,
-                data: { count: result.count },
-                message: `${result.count} BranchIngredientInventory record(s) deleted successfully`,
-            };
-        } catch (err: any) {
-            return {
-                status: false,
-                message: err.message || "Failed to delete branchIngredientInventory records",
-            };
-        }
-    },
-
-    // ---------- Update Admin ----------
     async update(
         id: number,
-        data: Prisma.BranchIngredientInventoryUpdateInput,
-        options: Partial<Prisma.BranchIngredientInventoryUpdateArgs> = {}
-    ): Promise<{ status: boolean; data?: any; message: string }> {
+        data: Prisma.IngredientUpdateInput,
+        options: Partial<Prisma.IngredientUpdateArgs> = {}
+    ) {
         try {
-            const branchIngredientInventory = await prisma.branchIngredientInventory.update({
+            const ingredient = await prisma.ingredient.update({
                 where: { id },
                 data,
                 ...options,
@@ -195,40 +97,30 @@ const branchIngredientInventoryRepo = {
 
             return {
                 status: true,
-                data: stringHelper.convertBigInt(branchIngredientInventory, "number"),
-                message: "Admin updated successfully",
+                data: stringHelper.convertBigInt(ingredient, "number"),
+                message: "Ingredient updated successfully",
             };
         } catch (err: any) {
-            return {
-                status: false,
-                message: err.message || "Failed to update branchIngredientInventory",
-            };
+            return { status: false, message: err.message || "Failed to update ingredient" };
         }
     },
 
-    // ---------- Delete Admin ----------
     async delete(
-        where: Prisma.BranchIngredientInventoryWhereUniqueInput,
-        options: Partial<Prisma.BranchIngredientInventoryDeleteArgs> = {}
-    ): Promise<{ status: boolean; data?: any; message: string }> {
+        where: Prisma.IngredientWhereUniqueInput,
+        options: Partial<Prisma.IngredientDeleteArgs> = {}
+    ) {
         try {
-            const branchIngredientInventory = await prisma.branchIngredientInventory.delete({
-                where,
-                ...options,
-            });
+            const ingredient = await prisma.ingredient.delete({ where, ...options });
 
             return {
                 status: true,
-                data: stringHelper.convertBigInt(branchIngredientInventory, "number"),
-                message: "Admin deleted successfully",
+                data: stringHelper.convertBigInt(ingredient, "number"),
+                message: "Ingredient deleted successfully",
             };
         } catch (err: any) {
-            return {
-                status: false,
-                message: err.message || "Failed to delete branchIngredientInventory",
-            };
+            return { status: false, message: err.message || "Failed to delete ingredient" };
         }
     },
 };
 
-export default branchIngredientInventoryRepo;
+export default ingredientRepo;

@@ -238,6 +238,8 @@ model Country {
 
   branches        Branch[] @relation("BranchCountry")
 
+  customerAddresses CustomerAddress[] @relation("CustomerAddressCountry")
+
   @@map("country")
 }
 
@@ -252,6 +254,8 @@ model State {
   cities      City[]   @relation("StateToCity")
 
   branches    Branch[] @relation("BranchState")
+
+   customerAddresses CustomerAddress[] @relation("CustomerAddressState")
 
   @@index([countryId])
   @@map("state")
@@ -268,6 +272,8 @@ model City {
 
   branches    Branch[] @relation("BranchCity")
 
+  customerAddresses CustomerAddress[] @relation("CustomerAddressCity")
+
   @@index([stateId])
   @@index([countryId])
   @@map("city")
@@ -280,14 +286,14 @@ model User {
   id        BigInt   @id @default(autoincrement()) @db.BigInt
 
   // hierarchy
-  parentId  BigInt?     @db.BigInt
-  parent    User?  @relation("UserHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
-  children  User[] @relation("UserHierarchy")
+  parentId     BigInt?     @db.BigInt
+  parent       User?       @relation("UserHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children     User[]      @relation("UserHierarchy")
 
   // 🔥 tenant root
-  rootId    BigInt?   @db.BigInt
-  root      User?     @relation("UserRoot", fields: [rootId], references: [id], onDelete: SetNull)
-  rootChildren User[] @relation("UserRoot")
+  rootId       BigInt?   @db.BigInt
+  root         User?     @relation("UserRoot", fields: [rootId], references: [id], onDelete: SetNull)
+  rootChildren User[]    @relation("UserRoot")
 
   profilePicture String
 
@@ -428,8 +434,8 @@ model emailConfig {
 model Role {
   id        BigInt   @id @default(autoincrement()) @db.BigInt
 
-  ownerId   BigInt   @db.BigInt
-  owner   User   @relation("RoleOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  userId    BigInt   @db.BigInt
+  user      User      @relation("RoleOwner", fields: [userId], references: [id], onDelete: Cascade)
 
   name      String
   status    Status @default(ACTIVE)
@@ -441,8 +447,8 @@ model Role {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([ownerId, name])
-  @@index([ownerId])
+  @@unique([userId, name])
+  @@index([userId])
   @@map("role")
 }
 
@@ -831,9 +837,11 @@ model Order {
 
   userId   BigInt     @db.BigInt
   branchId BigInt     @db.BigInt
+  customerId BigInt     @db.BigInt 
 
   user     User       @relation("UserOrders", fields: [userId], references: [id], onDelete: Restrict)
   branch   Branch     @relation("BranchOrders", fields: [branchId], references: [id], onDelete: Restrict)
+  customer Customer   @relation("CustomerOrders", fields: [customerId], references: [id], onDelete: Restrict)
 
   source   OrderSource
   totalAmount Float
@@ -846,6 +854,7 @@ model Order {
   updatedAt DateTime @updatedAt
 
   @@index([userId, branchId])
+   @@index([customerId])
   @@map("order")
 }
 
@@ -862,4 +871,57 @@ model OrderItem {
   price      Float
 
   @@map("orderitem")
+}
+
+model Customer {
+  id        BigInt   @id @default(autoincrement()) @db.BigInt
+
+  firstName String
+  lastName  String?
+  gender    String?
+
+  addresses CustomerAddress[] @relation("CustomerAddresses")
+  orders    Order[]           @relation("CustomerOrders")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("customer")
+}
+
+enum AddressType {
+  BILLING
+  SHIPPING
+}
+
+model CustomerAddress {
+  id          BigInt   @id @default(autoincrement()) @db.BigInt
+
+  customerId  BigInt   @db.BigInt
+  customer    Customer @relation("CustomerAddresses", fields: [customerId], references: [id], onDelete: Cascade)
+
+  address1    String
+  address2    String?
+
+  countryId   BigInt   @db.BigInt
+  stateId     BigInt   @db.BigInt
+  cityId      BigInt   @db.BigInt
+
+  country     Country  @relation("CustomerAddressCountry", fields: [countryId], references: [id])
+  state       State    @relation("CustomerAddressState", fields: [stateId], references: [id])
+  city        City     @relation("CustomerAddressCity", fields: [cityId], references: [id])
+
+  pincode     String?
+  phoneNumber String
+
+  type        AddressType   // BILLING / SHIPPING
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([countryId])
+  @@index([stateId])
+  @@index([cityId])
+  @@map("customeraddress")
 }

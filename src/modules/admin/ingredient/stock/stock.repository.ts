@@ -1,7 +1,7 @@
 // src/modules/admin/admin/admin.repository.ts
 
-import { prisma, Prisma } from "../../../../../../lib/prisma";
-import stringHelper from "../../../../../core/helpers/string.helper";
+import { prisma, Prisma } from "../../../../../lib/prisma";
+import stringHelper from "../../../../core/helpers/string.helper";
 
 const inventoryStockRepo = {
     // ---------- Find Admin(Unique) ----------

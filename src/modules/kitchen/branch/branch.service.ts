@@ -213,7 +213,7 @@ export const createBranch = async (data: {
 };
 
 // =====================================================
-// 📄 GET ALL BRANCHES
+// 📄 GET ALL BRANCHES (With Cuisines & Inventory Stocks)
 // =====================================================
 export const getBranches = async (params: {
     page: number;
@@ -232,7 +232,7 @@ export const getBranches = async (params: {
 
         const skip = (page - 1) * limit;
 
-        DebugHelper.debug(`[Cuisine Service] Fetching branches | Page: ${page}`);
+        DebugHelper.debug(`[Branch Service] Fetching branches | Page: ${page}`);
 
         // ===============================================
         // 🔍 BUILD WHERE FILTER
@@ -270,28 +270,35 @@ export const getBranches = async (params: {
         // 📦 FETCH DATA
         // ===============================================
         const [dataRes, filteredCountRes, totalCountRes] = await Promise.all([
-            branchRepo.findMany({
-                where,
-                skip,
-                take: limit,
-                orderBy: { createdAt: "desc" },
+          branchRepo.findMany({
+            where,
+            skip,
+            take: limit,
+            orderBy: { createdAt: "desc" },
+            include: {
+              cuisines: {
+                include: { cuisine: true },
+              },
+              // 🔥 YAHAN ADD KIYA HAI: Cuisines ke saath Inventory aur Stocks include honge
+              inventory: {
                 include: {
-                    cuisines: {
-                        include: { cuisine: true }
-                    }
-                }
-            }),
+                  ingredient: true, // Ingredient Master Info
+                  stocks: true, // Actual InventoryStock Table Data
+                },
+              },
+            },
+          }),
 
-            // filtered count
-            branchRepo.count({ where }),
+          // filtered count
+          branchRepo.count({ where }),
 
-            // total count for this kitchen active branches
-            branchRepo.count({
-                where: {
-                    userId: BigInt(filters.kitchenId),
-                    status: Status.ACTIVE
-                }
-            }),
+          // total count for this kitchen active branches
+          branchRepo.count({
+            where: {
+              userId: BigInt(filters.kitchenId),
+              status: Status.ACTIVE,
+            },
+          }),
         ]);
 
         const data = dataRes.data || [];
@@ -318,7 +325,9 @@ export const getBranches = async (params: {
             },
         };
     } catch (error: any) {
-        DebugHelper.debugError(`[Branche Service] getBranches failed: ${error.message}`);
+        DebugHelper.debugError(
+          `[Branch Service] getBranches failed: ${error.message}`,
+        );
 
         return {
             status: false,
@@ -337,12 +346,19 @@ export const getBranchById = async (id: bigint) => {
         DebugHelper.debug(`[Branch Service] Fetching branch: ${id}`);
 
         const response = await branchRepo.findUnique({
-            where: { id },
-            include: {
-                cuisines: {
-                    include: { cuisine: true }
-                }
-            }
+          where: { id },
+          include: {
+            cuisines: {
+              include: { cuisine: true },
+            },
+            // 📦 INVENTORY & STOCKS DATA ADDED HERE
+            inventory: {
+              include: {
+                ingredient: true,
+                stocks: true,
+              },
+            },
+          },
         });
 
         if (!response?.data) {

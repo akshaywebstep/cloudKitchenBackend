@@ -6,9 +6,7 @@ import menuItemRepo from './menu.repository';
 import menuCategoryRepo from '../../../shared/menu/category.repository';
 import branchIngredientInventoryRepo from '../ingredient/ingredient.repository';
 
-// =====================================================
-// ✅ CREATE MENU
-// =====================================================
+
 // =====================================================
 // ✅ CREATE MENU
 // =====================================================
@@ -831,5 +829,41 @@ export const updateMenuItemStatus = async (req: Request, res: Response) => {
 
     } finally {
         debugHelper.debug('=== TOGGLE MENU STATUS END ===');
+    }
+};
+
+// =====================================================
+// 📋 GET MENU ITEMS FOR SELECT (dropdown for order create)
+// =====================================================
+export const getMenuItemsForSelect = async (req: Request, res: Response) => {
+    debugHelper.debug('=== GET MENU SELECT LIST START ===');
+
+    try {
+        const request = req as Request & { kitchen: { id: number } };
+        const kitchenId = request.kitchen.id;
+
+        const branchId = Number(req.params.branchId);
+        const branchResult = await BranchService.getBranchById(BigInt(branchId));
+
+        if (!branchResult.status) {
+            return res.status(404).json({ status: false, message: branchResult.message });
+        }
+
+        if (Number(branchResult.data?.userId) !== Number(kitchenId)) {
+            return res.status(403).json({ status: false, message: 'Branch does not belong to this kitchen' });
+        }
+
+        const result = await MenuItemService.getMenuItemsForSelect(kitchenId, branchId);
+
+        return res.status(200).json({
+            status: true,
+            message: result.message,
+            data: result.data   // ✅ ab { kitchen, branch, items } aayega
+        });
+    } catch (error: any) {
+        debugHelper.debugError('❌ Controller Error:', error);
+        return res.status(500).json({ status: false, message: error.message });
+    } finally {
+        debugHelper.debug('=== GET MENU SELECT LIST END ===');
     }
 };

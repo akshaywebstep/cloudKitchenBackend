@@ -23,22 +23,19 @@ export const loginAdmin = async (data: AuthDataLogin) => {
         debugHelper.debug(`[Admin Auth Service] Searching for admin: ${username}`);
 
         const response = await userRepo.findFirst({
-            where: {
-                userType: UserType.ADMIN,
-                OR: [
-                    { phone: username },
-                    { email: username },
-                ]
-            },
-            select: {
-                id: true,
-                email: true,
-                phone: true,
-                password: true,
-                status: true,
-                role: true,
-                userType: true
-            }
+          where: {
+            userType: { in: [UserType.ADMIN, UserType.ADMIN_STAFF] },
+            OR: [{ phone: username }, { email: username }],
+          },
+          select: {
+            id: true,
+            email: true,
+            phone: true,
+            password: true,
+            status: true,
+            role: true,
+            userType: true,
+          },
         });
 
         if (!response?.status || !response?.data) {
@@ -117,19 +114,19 @@ export const getUserByUsername = async (
                 : { phone: username };
 
         const response = await userRepo.findFirst({
-            where: {
-                ...whereCondition,
-                userType: UserType.ADMIN
-            },
-            select: {
-                id: true,
-                email: true,
-                phone: true,
-                password: true,
-                status: true,
-                userType: true,
-                role: true
-            }
+          where: {
+            ...whereCondition,
+            userType: { in: [UserType.ADMIN, UserType.ADMIN_STAFF] }, // 👈 CHANGED
+          },
+          select: {
+            id: true,
+            email: true,
+            phone: true,
+            password: true,
+            status: true,
+            userType: true,
+            role: true,
+          },
         });
 
         if (!response?.status || !response?.data) {
@@ -179,17 +176,17 @@ export const getUserByResetToken = async (token: string) => {
             .digest("hex");
 
         const response = await userRepo.findFirst({
-            where: {
-                resetPasswordToken: hashedToken,
-                userType: UserType.ADMIN
-            },
-            select: {
-                id: true,
-                password: true,
-                resetPasswordExpiresAt: true,
-                status: true,
-                userType: true
-            }
+          where: {
+            resetPasswordToken: hashedToken,
+            userType: { in: [UserType.ADMIN, UserType.ADMIN_STAFF] }, // 👈 CHANGED
+          },
+          select: {
+            id: true,
+            password: true,
+            resetPasswordExpiresAt: true,
+            status: true,
+            userType: true,
+          },
         });
 
         if (!response?.status || !response?.data) {

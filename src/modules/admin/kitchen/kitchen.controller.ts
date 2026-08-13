@@ -1,88 +1,45 @@
-// src/modules/admin/kitchen/kitchen.controller.ts
 import { Request, Response } from 'express';
-import * as KitchenAuthService from '../../kitchen/auth/auth.service'; // 🔹 reusing original Kitchen service, not duplicating logic
+import * as KitchenService from './kitchen.service';
 import debugHelper from '../../../core/helpers/debug';
 import { saveFile } from '../../../core/helpers/file.helper';
 
+// =====================================================
+// ✅ CREATE KITCHEN
+// =====================================================
 export const createKitchen = async (req: Request, res: Response) => {
     debugHelper.debug('=== [Admin] CREATE KITCHEN START ===');
 
     try {
-        const request = req as Request & {
-            files?: Express.Multer.File[];
-        };
+        const request = req as Request & { files?: Express.Multer.File[] };
 
-        debugHelper.debug("Body:", request.body);
-        debugHelper.debug("Files:", request.files?.map(f => ({ fieldname: f.fieldname, originalname: f.originalname })) || "No files");
-
-        const { kitchenName, phone, email, password, contactTitle, contactFirstName, contactLastName, contactEmail, contactPhone } = request.body;
+        const {
+            kitchenName, phone, email, password,
+            contactTitle, contactFirstName, contactLastName,
+            contactEmail, contactPhone
+        } = request.body;
 
         const errors: Record<string, string> = {};
 
-        // --- Validate files ---
-        const allowedFiles = [{ fieldname: "profilePicture", required: true }];
-        const filesToSave: Record<string, Express.Multer.File[]> = {};
-
-        for (const fileDef of allowedFiles) {
-            const filesForField = request.files?.filter(f => f.fieldname === fileDef.fieldname) || [];
-            if (fileDef.required && filesForField.length === 0) {
-                errors[fileDef.fieldname] = `${fileDef.fieldname.charAt(0).toUpperCase() + fileDef.fieldname.slice(1)} file is required`;
-                debugHelper.debugWarn(errors[fileDef.fieldname]);
-            } else if (filesForField.length > 0) {
-                filesToSave[fileDef.fieldname] = filesForField;
-                debugHelper.debug(`Files ready for saving for '${fileDef.fieldname}':`, filesForField.map(f => f.originalname));
-            }
-        }
-
-        // --- Availability check (email/phone already used) ---
-        if (email || phone) {
-            const [emailCheck, phoneCheck] = await Promise.all([
-                email
-                    ? KitchenAuthService.checkUserAvailability(email)
-                    : Promise.resolve({ available: true, message: "", field: null }),
-
-                phone
-                    ? KitchenAuthService.checkUserAvailability(phone)
-                    : Promise.resolve({ available: true, message: "", field: null }),
-            ]);
-
-            if (!emailCheck.available) {
-                errors.email = emailCheck.message;
-            }
-
-            if (!phoneCheck.available) {
-                errors.phone = phoneCheck.message;
-            }
+        const profilePictureFile = request.files?.find(f => f.fieldname === 'profilePicture');
+        if (!profilePictureFile) {
+            errors.profilePicture = 'Profile picture is required';
         }
 
         if (Object.keys(errors).length > 0) {
-            debugHelper.debugWarn("[Admin Create Kitchen] Validation failed. Errors:", errors);
-            return res.status(400).json({
-                status: false,
-                message: "Validation failed",
-                errors
+            return res.status(400).json({ status: false, message: 'Validation failed', errors });
+        }
+
+        let savedPath: string | undefined;
+        if (profilePictureFile) {
+            savedPath = await saveFile(profilePictureFile, {
+                destination: 'uploads/profilePicture',
+                name: 'kitchen-profilePicture',
+                unique: true
             });
         }
 
-        // --- Save files ---
-        const uploadedFiles: Record<string, string> = {};
-        for (const fieldname of Object.keys(filesToSave)) {
-            for (const file of filesToSave[fieldname]) {
-                debugHelper.debug(`Saving file '${file.originalname}' for field '${fieldname}'...`);
-                const savedPath = await saveFile(file, {
-                    destination: `uploads/${fieldname}`,
-                    name: `brand-${fieldname}`,
-                    unique: true
-                });
-                uploadedFiles[fieldname] = savedPath;
-                debugHelper.debug(`File saved: ${savedPath}`);
-            }
-        }
-
-        // --- Create Kitchen (reusing the original Kitchen module service) ---
-        debugHelper.debug('[Admin Create Kitchen] Calling KitchenAuthService.createKitchen...');
-        const result = await KitchenAuthService.createKitchen({
-            profilePicture: uploadedFiles.profilePicture,
+        const result = await KitchenService.createKitchen({
+            profilePicture: savedPath,
             kitchenName,
             phone,
             email,
@@ -95,25 +52,115 @@ export const createKitchen = async (req: Request, res: Response) => {
         });
 
         if (!result.status) {
-            return res.status(400).json({
-                status: false,
-                message: result.message
+            return res.status(400).json({ status: false, message: result.message });
+        }
+
+        return res.status(201).json({
+            status: true,
+            message: 'Kitchen created successfully',
+            data: result.data
+        });
+    } catch (error: any) {
+        debugHelper.debugError('❌ [Admin Create Kitchen] Controller Error:', error);
+        return res.status(500).json({ status: false, message: error.message || 'Internal server error' });
+    } finally {
+        debugHelper.debug('=== [Admin] CREATE KITCHEN END ===');
+    }
+};
+
+// =====================================================
+// 📄 GET ALL KITCHENS
+// =====================================================
+export const getKitchens = async (req: Request, res: Response) => {
+    try {
+        const { page = 1, limit = 10, kitchenName, status } = req.query;
+
+        const result = await KitchenService.getKitchens({
+            page: Number(page),
+            limit: Number(limit),
+            filters: {
+                kitchenName: kitchenName ? String(kitchenName) : undefined,
+                status: status ? (String(status) as any) : undefined
+            }
+        });
+
+        return res.status(200).json({
+            status: true,
+            message: 'Kitchens fetched successfully',
+            data: result.data,
+            meta: result.meta
+        });
+    } catch (error: any) {
+        return res.status(500).json({ status: false, message: error.message });
+    }
+};
+
+// =====================================================
+// 📄 GET SINGLE KITCHEN
+// =====================================================
+export const getKitchenById = async (req: Request, res: Response) => {
+    try {
+        const id = Number(req.params.id);
+        const result = await KitchenService.getKitchenById(id);
+
+        if (!result.status) {
+            return res.status(404).json({ status: false, message: result.message });
+        }
+
+        return res.status(200).json({ status: true, message: result.message, data: result.data });
+    } catch (error: any) {
+        return res.status(500).json({ status: false, message: error.message || 'Internal server error' });
+    }
+};
+
+// =====================================================
+// ✏️ UPDATE KITCHEN
+// =====================================================
+export const updateKitchen = async (req: Request, res: Response) => {
+    try {
+        const id = Number(req.params.id);
+        const request = req as Request & { files?: Express.Multer.File[] };
+
+        const profilePictureFile = request.files?.find(f => f.fieldname === 'profilePicture');
+        let savedPath: string | undefined;
+
+        if (profilePictureFile) {
+            savedPath = await saveFile(profilePictureFile, {
+                destination: 'uploads/profilePicture',
+                name: 'kitchen-profilePicture',
+                unique: true
             });
         }
 
-        res.status(201).json({
-            status: true,
-            message: "Kitchen created successfully by Admin",
-            data: result.data
+        const result = await KitchenService.updateKitchen(id, {
+            ...request.body,
+            ...(savedPath ? { profilePicture: savedPath } : {})
         });
 
+        if (!result.status) {
+            return res.status(400).json({ status: false, message: result.message });
+        }
+
+        return res.status(200).json({ status: true, message: result.message, data: result.data });
     } catch (error: any) {
-        debugHelper.debugError("❌ [Admin Create Kitchen] Controller Error:", error);
-        return res.status(500).json({
-            status: false,
-            message: error.message || "Internal server error"
-        });
-    } finally {
-        debugHelper.debug("=== [Admin] CREATE KITCHEN END ===");
+        return res.status(500).json({ status: false, message: error.message || 'Internal server error' });
+    }
+};
+
+// =====================================================
+// 🗑️ DELETE KITCHEN
+// =====================================================
+export const deleteKitchen = async (req: Request, res: Response) => {
+    try {
+        const id = Number(req.params.id);
+        const result = await KitchenService.deleteKitchen(id);
+
+        if (!result.status) {
+            return res.status(400).json({ status: false, message: result.message });
+        }
+
+        return res.status(200).json({ status: true, message: result.message, data: result.data });
+    } catch (error: any) {
+        return res.status(500).json({ status: false, message: error.message || 'Internal server error' });
     }
 };

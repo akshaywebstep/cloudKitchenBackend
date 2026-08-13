@@ -967,3 +967,76 @@ export const updateMenuItemStatus = async (
         };
     }
 };
+
+
+// =====================================================
+// 📋 GET MENU ITEMS FOR SELECT (For Order Create )
+// =====================================================
+export const getMenuItemsForSelect = async (kitchenId: number, branchId: number) => {
+    try {
+        DebugHelper.debug(`[MenuItem Service] Fetching select-list for kitchen:${kitchenId} branch:${branchId}`);
+
+        // ===============================================
+        // 🍳 KITCHEN (User) INFO — ek hi baar fetch
+        // ===============================================
+        const kitchen = await prisma.user.findUnique({
+            where: { id: BigInt(kitchenId) },
+            select: {
+                id: true,
+                kitchenName: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phone: true
+            }
+        });
+
+        // ===============================================
+        // 🏢 BRANCH INFO — ek hi baar fetch
+        // ===============================================
+        const branch = await prisma.branch.findUnique({
+            where: { id: BigInt(branchId) },
+            select: {
+                id: true,
+                name: true,
+                addressLine1: true,
+                addressLine2: true,
+                area: true,
+                pincode: true,
+                contactPhone: true
+            }
+        });
+
+        // ===============================================
+        // 🍽️ MENU ITEMS
+        // ===============================================
+        const menuItems = await prisma.menuItem.findMany({
+            where: {
+                kitchenId: BigInt(kitchenId),
+                branchId: BigInt(branchId),
+                status: Status.ACTIVE
+            },
+            select: {
+                id: true,
+                name: true,
+                price: true,
+                category: { select: { id: true, name: true } },
+                subCategory: { select: { id: true, name: true } }
+            },
+            orderBy: { name: 'asc' }
+        });
+
+        return {
+            status: true,
+            data: {
+                kitchen: stringHelper.convertBigInt(kitchen, "number"),
+                branch: stringHelper.convertBigInt(branch, "number"),
+                items: stringHelper.convertBigInt(menuItems, "number")
+            },
+            message: 'MenuItems fetched successfully'
+        };
+    } catch (error: any) {
+        DebugHelper.debugError(`[MenuItem Service] getMenuItemsForSelect failed: ${error.message}`);
+        return { status: false, message: 'Failed to fetch menuItems', data: null };
+    }
+};

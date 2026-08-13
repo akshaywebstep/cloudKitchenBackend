@@ -8,13 +8,15 @@ import debugHelper from '../../../core/helpers/debug';
 const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key';
 
 export interface AuthRequest extends Request {
-    admin?: {
-        id: number | bigint;
-        email: string | null;
-        phone: string | null;
-        role: string;
-        status: string;
-    };
+  admin?: {
+    id: number | bigint;
+    email: string | null;
+    phone: string | null;
+    role: string;
+    status: string;
+    userType: string; // 👈 ADD
+    roleId: number | bigint | null; // 👈 ADD — permission check ke liye zaroori
+  };
 }
 
 export const verifyToken = () => {
@@ -40,17 +42,19 @@ export const verifyToken = () => {
 
             // 2. Fetch fresh admin details from Repository
             const response = await userRepo.findFirst({
-                where: {
-                    id: BigInt(decoded.userId),
-                    userType: UserType.ADMIN
-                },
-                select: {
-                    id: true,
-                    email: true,
-                    phone: true,
-                    status: true,
-                    role: true
-                }
+              where: {
+                id: BigInt(decoded.userId),
+                userType: { in: [UserType.ADMIN, UserType.ADMIN_STAFF] },
+              },
+              select: {
+                id: true,
+                email: true,
+                phone: true,
+                status: true,
+                role: true,
+                userType: true,
+                roleId: true,
+              },
             });
 
             // 3. Validate if admin exists in DB

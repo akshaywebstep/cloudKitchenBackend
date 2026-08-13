@@ -1,79 +1,22 @@
 import { z } from 'zod';
 import { Request, Response, NextFunction } from 'express';
-import { Unit } from '../../../../../prisma/generated/prisma/client';
-
-// ===============================================
-// 🥬 INGREDIENT SCHEMA
-// ===============================================
-const ingredientSchema = z.object({
-
-    id: z.coerce.number().positive().optional(),
-
-    name: z
-        .string()
-        .trim()
-        .min(1, "Ingredient name is required")
-        .optional(),
-
-    category: z
-        .string()
-        .trim()
-        .min(1, "Category is required")
-        .optional(),
-
-    image: z
-        .string()
-        .url("Image must be a valid URL")
-        .optional(),
-
-    unit: z.nativeEnum(Unit, {
-        message: "Unit is required"
-    }),
-
-}).superRefine((val, ctx) => {
-
-    // ✅ Agar id nahi hai to name + category dono required
-    if (!val.id) {
-
-        if (!val.name) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: "Ingredient name is required if id is not provided",
-                path: ["name"],
-            });
-        }
-
-        if (!val.category) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: "Category is required if id is not provided",
-                path: ["category"],
-            });
-        }
-    }
-});
+import { Status } from '../../../../prisma/generated/prisma/client';
 
 // ==============================
 // 🧾 CREATE SCHEMA
 // ==============================
-
 export const createIngredientSchema = z.object({
-
-    ingredients: z.array(ingredientSchema)
-        .min(1, "At least one ingredient is required")
-
+    name: z.string().trim().min(1, "Ingredient name is required"),
+    category: z.string().trim().min(1, "Category is required"),
+    image: z.string().url("Image must be a valid URL").optional(),
+    status: z.nativeEnum(Status).optional()
 });
-
-// ==============================
-// 🛡️ MIDDLEWARE
-// ==============================
 
 export const validateCreateIngredient = (
     req: Request,
     res: Response,
     next: NextFunction
 ) => {
-
     const result = createIngredientSchema.safeParse(req.body);
 
     if (!result.success) {
@@ -85,26 +28,27 @@ export const validateCreateIngredient = (
     }
 
     req.body = result.data;
-
     next();
 };
 
-export const updateInventoryIngredientSchema = z.object({
+// ==============================
+// ✏️ UPDATE SCHEMA
+// ==============================
+export const updateIngredientSchema = z.object({
     name: z.string().trim().min(1, "Ingredient name is required").optional(),
     category: z.string().trim().min(1, "Category is required").optional(),
     image: z.string().trim().optional().transform((val) => val || undefined),
-    unit: z.nativeEnum(Unit).optional(),
+    status: z.nativeEnum(Status).optional()
 }).refine((val) => Object.keys(val).length > 0, {
     message: "At least one field is required",
 });
 
-export const validateUpdateInventoryIngredient = (
+export const validateUpdateIngredient = (
     req: Request,
     res: Response,
     next: NextFunction
 ) => {
-
-    const result = updateInventoryIngredientSchema.safeParse(req.body);
+    const result = updateIngredientSchema.safeParse(req.body);
 
     if (!result.success) {
         return res.status(400).json({
@@ -115,6 +59,5 @@ export const validateUpdateInventoryIngredient = (
     }
 
     req.body = result.data;
-
     next();
 };
