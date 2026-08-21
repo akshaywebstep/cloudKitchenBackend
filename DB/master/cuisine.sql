@@ -1,0 +1,22 @@
+-- CUISINE
+INSERT INTO Cuisine (name, image, status, createdAt, updatedAt) VALUES
+('North Indian', NULL, 'ACTIVE', NOW(), NOW()),
+('South Indian', NULL, 'ACTIVE', NOW(), NOW()),
+('Chinese', NULL, 'ACTIVE', NOW(), NOW()),
+('Italian', NULL, 'ACTIVE', NOW(), NOW()),
+('Continental', NULL, 'ACTIVE', NOW(), NOW()),
+('Mexican', NULL, 'ACTIVE', NOW(), NOW()),
+('Thai', NULL, 'ACTIVE', NOW(), NOW()),
+('Japanese', NULL, 'ACTIVE', NOW(), NOW()),
+('Korean', NULL, 'ACTIVE', NOW(), NOW()),
+('Mediterranean', NULL, 'ACTIVE', NOW(), NOW()),
+('Lebanese', NULL, 'ACTIVE', NOW(), NOW()),
+('American', NULL, 'ACTIVE', NOW(), NOW()),
+('Fast Food', NULL, 'ACTIVE', NOW(), NOW()),
+('Street Food', NULL, 'ACTIVE', NOW(), NOW()),
+('Beverages', NULL, 'ACTIVE', NOW(), NOW()),
+('Desserts', NULL, 'ACTIVE', NOW(), NOW()),
+('Bakery', NULL, 'ACTIVE', NOW(), NOW()),
+('Healthy Food', NULL, 'ACTIVE', NOW(), NOW()),
+('Vegan', NULL, 'ACTIVE', NOW(), NOW()),
+('Jain', NULL, 'ACTIVE', NOW(), NOW());
